@@ -14,36 +14,53 @@ fi
 if [ $sourced = 1 ]; then
 	echo "Error: Script must NOT be sourced."
 else
-	#zift_dir="$(dirname "$0")"
-	zift_dir="$(cd $(dirname "$0") && pwd)"
+	SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+	cd $SCRIPT_DIR
+	. ./config.sh
+	PATTERN="${PATTERN}.tar.gz.gpg"
 
-	echo $zift_dir > $HOME/.zift_dir
+	if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+		echo "Usage: $0"
+		echo "  [file ...]  Process specific files matching the pattern '$PATTERN'"
+		exit
+	else
+		stty -echo
+		printf "Enter passphrase: "
+		read SECRET_PASSPHRASE
+		stty echo
+		printf "\n"
+		echo ""
+		for file in *; do
+			case "$file" in
+				$PATTERN)
+					echo "File '$file' matches the pattern"
 
-	cd $zift_dir
+					zift=$file
+					new_zift=${file%.tar.gz.gpg}
 
-	for file in *; do
-		case "$file" in
-			zift-*.tar.gz.gpg)
-				echo "File '$file' matches the pattern"
-				echo ""
+					gpg --batch --passphrase "$SECRET_PASSPHRASE" --decrypt "$zift" | tar xzf - && rm -rf "$zift"
 
-				zift=$file
-				new_zift=${file%.tar.gz.gpg}
+					if [ -f "$zift" ]; then
+						echo "Decryption Failed: '$zift'"
+					elif [ -e "$new_zift" ]; then
+						echo "Decryption Complete: '$zift' -> '$new_zift'"
+					fi
+					;;
+				encrypt.sh.tar.gz.gpg)
+					echo "Decrypting 'encrypt.sh.tar.gz.gpg'"
 
-				gpg --decrypt "$zift" | tar xzf - && rm -rf "$zift"
+					gpg --batch --passphrase "$SECRET_PASSPHRASE" --decrypt "encrypt.sh.tar.gz.gpg" | tar xzf - && rm -rf "encrypt.sh.tar.gz.gpg"
 
-				if [ -f "$zift_dir/$zift" ]; then
-					echo ""
-					echo "Decryption Failed: '$zift_dir/$zift'"
-				elif [ -d "$zift_dir/$new_zift" ]; then
-					echo ""
-					echo "Decryption Complete: '$zift_dir/$zift' -> '$zift_dir/$new_zift'"
-				fi
-				;;
-			*)
-				# echo "File $file does not match the pattern"
-				;;
-		esac
-	done
+					if [ -f "encrypt.sh" ]; then
+						echo "Decryption Complete: 'encrypt.sh.tar.gz.gpg' -> 'encrypt.sh'"
+					fi
+					;;
+				*)
+					echo "Skipping '$file': doesn't match pattern"
+					;;
+			esac
+			echo ""
+		done
+	fi
 fi
 

@@ -17,7 +17,7 @@ else
 	## Git Repository
 	# IMPORTANT: Change the value of GIT_REPO before running. Script will not execute with default setting.
 	# Example: GIT_REPO='https://github.com/amjadodeh/zift-template.git'
-	GIT_REPO='CHANGE_THIS'
+	GIT_REPO='https://github.com/amjadodeh/zift.git'
 
 
 	if [ "$GIT_REPO" = "CHANGE_THIS" ]; then
